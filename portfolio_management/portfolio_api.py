@@ -2432,6 +2432,7 @@ async def get_covered_call_recommendations():
         recommender = CoveredCallRecommender(polygon_api_key=polygon_api_key, supabase_client=supabase)
         result = recommender.get_recommendations(stock_pos_dicts, blocked_tickers)
         
+        # Extract data from the result dictionary (now matches CSP structure)
         recommendations = result['recommendations']
         underlying_tickers_considered = result['underlying_tickers_considered']
         underlying_tickers_in_results = result['underlying_tickers_in_results']
@@ -2452,6 +2453,7 @@ async def get_covered_call_recommendations():
         return {
             'recommendations': recommendations[:20],  # Top 20 recommendations
             'total_available': len(stock_positions),
+            'total_considered': result['total_considered'],  # Total options analyzed
             'blocked_tickers': list(blocked_tickers),
             'underlying_tickers_considered': underlying_tickers_considered,
             'underlying_tickers_in_results': underlying_tickers_in_results,

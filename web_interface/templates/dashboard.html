@@ -149,6 +149,36 @@
                 <circle cx="12" cy="12" r="3"/>
                 <path d="M12 1v6m0 6v6m5.2-17.4l-3 5.2m-4.4 7.6l-3 5.2M23 12h-6m-6 0H5m17.4-5.2l-5.2 3m-7.6 4.4l-5.2 3"/>
             </symbol>
+            
+            <!-- RSI Icon -->
+            <symbol id="icon-rsi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3v18h18"/>
+                <path d="M9 9l3 3 3-3"/>
+                <path d="M12 12v6"/>
+            </symbol>
+            
+            <!-- MACD Icon -->
+            <symbol id="icon-macd" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3v18h18"/>
+                <path d="M7 12h4"/>
+                <path d="M7 8h6"/>
+                <path d="M7 16h8"/>
+            </symbol>
+            
+            <!-- Bollinger Bands Icon -->
+            <symbol id="icon-bollinger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3v18h18"/>
+                <path d="M7 8l4-4 4 4 4-4"/>
+                <path d="M7 16l4 4 4-4 4 4"/>
+            </symbol>
+            
+            <!-- Support/Resistance Icon -->
+            <symbol id="icon-support" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3v18h18"/>
+                <path d="M7 10h10"/>
+                <path d="M7 14h10"/>
+                <path d="M12 6v12"/>
+            </symbol>
         </defs>
     </svg>
     
@@ -760,7 +790,6 @@
         /* Greeks columns styling */
         td:nth-child(11), td:nth-child(12), td:nth-child(13), td:nth-child(14), td:nth-child(15) {
             text-align: center;
-            font-family: 'Courier New', monospace;
             font-size: 0.8rem;
         }
 
@@ -1601,8 +1630,30 @@
 
         .table-container {
             overflow-x: auto;
+            overflow-y: visible;
             border-radius: 8px;
             border: 1px solid #e5e7eb;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 #f1f5f9;
+        }
+
+        .table-container::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .table-container::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
         }
 
         .recommendations-table {
@@ -1619,12 +1670,37 @@
             text-align: left;
             border-bottom: 2px solid #e5e7eb;
             white-space: nowrap;
+            min-width: 80px;
         }
 
         .recommendations-table td {
             padding: 0.75rem 0.5rem;
             border-bottom: 1px solid #f3f4f6;
             white-space: nowrap;
+            min-width: 80px;
+        }
+
+        /* Improve table responsiveness */
+        @media (max-width: 1024px) {
+            .recommendations-table th,
+            .recommendations-table td {
+                padding: 0.5rem 0.25rem;
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .recommendations-table th,
+            .recommendations-table td {
+                padding: 0.4rem 0.2rem;
+                font-size: 0.75rem;
+                min-width: 60px;
+            }
+            
+            .recommendations-table th:nth-child(1),
+            .recommendations-table td:nth-child(1) {
+                min-width: 40px;
+            }
         }
 
         .recommendations-table tbody tr:hover {
@@ -1779,6 +1855,13 @@
             padding: 0.5rem;
             background: #f9fafb;
             border-radius: 4px;
+        }
+
+        .indicator-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.25rem;
         }
 
         /* Modal Score Breakdown Styles */
@@ -6665,8 +6748,10 @@ updateProgress('prices', 'completed');
                     console.log('CC Recommendations data:', data);
                     console.log('CC Ticker counts:', {
                         considered: data.underlying_tickers_considered,
-                        inResults: data.underlying_tickers_in_results
+                        inResults: data.underlying_tickers_in_results,
+                        totalConsidered: data.total_considered
                     });
+                    console.log('CC Total considered value:', data.total_considered);
                     
                     if (data.error) {
                         showError(`Error: ${data.error}`);
@@ -6682,7 +6767,7 @@ updateProgress('prices', 'completed');
                         console.log('First recommendation:', data.recommendations[0]);
                         displayCCRecommendations(
                             data.recommendations,
-                            data.recommendations.length,
+                            data.total_considered || data.recommendations.length,
                             data.underlying_tickers_considered || 0,
                             data.underlying_tickers_in_results || 0
                         );
@@ -6722,7 +6807,7 @@ updateProgress('prices', 'completed');
             // Update table info with underlying ticker counts
             const tickerInfo = underlyingTickersConsidered > 0 ? 
                 ` (${underlyingTickersConsidered} underlying tickers considered, ${underlyingTickersInResults} in results)` : '';
-            tableInfo.textContent = `Found ${recommendations.length} covered call opportunities${tickerInfo} - click any row to expand details`;
+            tableInfo.textContent = `Found ${recommendations.length} covered call opportunities (from ${totalConsidered} analyzed)${tickerInfo} - click any row to expand details`;
             
             recommendations.forEach((rec, index) => {
                 // Determine probability color
@@ -6767,7 +6852,7 @@ updateProgress('prices', 'completed');
                 detailRow.style.display = 'none';
                 
                 const bbPosition = (rec.bb_position * 100).toFixed(0);
-                const rsiClass = rec.rsi > 70 ? 'negative' : (rec.rsi < 30 ? 'positive' : '');
+                const rsiClass = rec.rsi > 70 ? 'positive' : (rec.rsi < 30 ? 'negative' : ''); // For CCs, overbought is good
                 const breakdown = rec.score_breakdown;
                 
                 // Debug: log the breakdown to see what's there
@@ -6796,27 +6881,15 @@ updateProgress('prices', 'completed');
                                     <!-- Ordered by weight: highest to lowest -->
                                     <div class="score-component">
                                         <div class="component-label">
-                                            <svg class="icon icon-sm icon-inline" style="stroke: #ef4444;">
-                                                <use href="#icon-target"/>
-                                            </svg>
-                                            Probability of Profit (${(weights.probability * 100).toFixed(0)}%)
-                                        </div>
-                                        <div class="component-bar">
-                                            <div class="component-fill" style="width: ${breakdown.probability_score}%; background: #ef4444;"></div>
-                                        </div>
-                                        <div class="component-value">${breakdown.probability_score.toFixed(1)}/100 × ${(weights.probability * 100).toFixed(0)}% = <strong>${(breakdown.probability_score * weights.probability).toFixed(1)}</strong></div>
-                                    </div>
-                                    <div class="score-component">
-                                        <div class="component-label">
                                             <svg class="icon icon-sm icon-inline" style="stroke: #10b981;">
-                                                <use href="#icon-dollar"/>
+                                                <use href="#icon-trending-up"/>
                                             </svg>
-                                            ROI (${(weights.roi * 100).toFixed(0)}%)
+                                            Annualized Return (${(weights.annualized_return * 100).toFixed(0)}%)
                                         </div>
                                         <div class="component-bar">
-                                            <div class="component-fill" style="width: ${breakdown.roi_score}%; background: #10b981;"></div>
+                                            <div class="component-fill" style="width: ${breakdown.annualized_return_score}%; background: #10b981;"></div>
                                         </div>
-                                        <div class="component-value">${breakdown.roi_score.toFixed(1)}/100 × ${(weights.roi * 100).toFixed(0)}% = <strong>${(breakdown.roi_score * weights.roi).toFixed(1)}</strong></div>
+                                        <div class="component-value">${breakdown.annualized_return_score.toFixed(1)}/100 × ${(weights.annualized_return * 100).toFixed(0)}% = <strong>${(breakdown.annualized_return_score * weights.annualized_return).toFixed(1)}</strong></div>
                                     </div>
                                     <div class="score-component">
                                         <div class="component-label">
@@ -6829,6 +6902,30 @@ updateProgress('prices', 'completed');
                                             <div class="component-fill" style="width: ${breakdown.technical_score}%; background: #3b82f6;"></div>
                                         </div>
                                         <div class="component-value">${breakdown.technical_score.toFixed(1)}/100 × ${(weights.technical * 100).toFixed(0)}% = <strong>${(breakdown.technical_score * weights.technical).toFixed(1)}</strong></div>
+                                    </div>
+                                    <div class="score-component">
+                                        <div class="component-label">
+                                            <svg class="icon icon-sm icon-inline" style="stroke: #f59e0b;">
+                                                <use href="#icon-alert"/>
+                                            </svg>
+                                            Resistance (${(weights.resistance * 100).toFixed(0)}%)
+                                        </div>
+                                        <div class="component-bar">
+                                            <div class="component-fill" style="width: ${breakdown.resistance_score}%; background: #f59e0b;"></div>
+                                        </div>
+                                        <div class="component-value">${breakdown.resistance_score.toFixed(1)}/100 × ${(weights.resistance * 100).toFixed(0)}% = <strong>${(breakdown.resistance_score * weights.resistance).toFixed(1)}</strong></div>
+                                    </div>
+                                    <div class="score-component">
+                                        <div class="component-label">
+                                            <svg class="icon icon-sm icon-inline" style="stroke: #ef4444;">
+                                                <use href="#icon-target"/>
+                                            </svg>
+                                            Probability of Profit (${(weights.probability * 100).toFixed(0)}%)
+                                        </div>
+                                        <div class="component-bar">
+                                            <div class="component-fill" style="width: ${breakdown.probability_score}%; background: #ef4444;"></div>
+                                        </div>
+                                        <div class="component-value">${breakdown.probability_score.toFixed(1)}/100 × ${(weights.probability * 100).toFixed(0)}% = <strong>${(breakdown.probability_score * weights.probability).toFixed(1)}</strong></div>
                                     </div>
                                     <div class="score-component">
                                         <div class="component-label">
@@ -6866,38 +6963,52 @@ updateProgress('prices', 'completed');
                                         </div>
                                         <div class="component-value">${breakdown.liquidity_score.toFixed(1)}/100 × ${(weights.liquidity * 100).toFixed(0)}% = <strong>${(breakdown.liquidity_score * weights.liquidity).toFixed(1)}</strong></div>
                                     </div>
-                                    <div class="score-component">
-                                        <div class="component-label">
-                                            <svg class="icon icon-sm icon-inline" style="stroke: #f59e0b;">
-                                                <use href="#icon-alert"/>
-                                            </svg>
-                                            Resistance (${(weights.resistance * 100).toFixed(0)}%)
-                                        </div>
-                                        <div class="component-bar">
-                                            <div class="component-fill" style="width: ${breakdown.resistance_score}%; background: #f59e0b;"></div>
-                                        </div>
-                                        <div class="component-value">${breakdown.resistance_score.toFixed(1)}/100 × ${(weights.resistance * 100).toFixed(0)}% = <strong>${(breakdown.resistance_score * weights.resistance).toFixed(1)}</strong></div>
-                                    </div>
                                 </div>
                             </div>
                             
                             <div class="detail-section">
-                                <h5>📈 Technical Indicators</h5>
+                                <h5>
+                                    <svg class="icon icon-sm icon-inline" style="stroke: var(--primary-blue);">
+                                        <use href="#icon-chart"/>
+                                    </svg>
+                                    Technical Indicators
+                                </h5>
                                 <div class="details-grid">
                                     <div>
-                                        <strong>RSI:</strong> <span class="${rsiClass}">${rec.rsi.toFixed(1)}</span><br>
+                                        <div class="indicator-header">
+                                            <svg class="icon icon-sm icon-inline" style="stroke: #8b5cf6;">
+                                                <use href="#icon-rsi"/>
+                                            </svg>
+                                            <strong>RSI:</strong> <span class="${rsiClass}">${rec.rsi.toFixed(1)}</span>
+                                        </div>
                                         <small>${rec.rsi > 70 ? '✓ Overbought - Good for selling CCs' : rec.rsi < 30 ? '✗ Oversold - Bad for selling CCs' : 'Neutral'}</small>
                                     </div>
                                     <div>
-                                        <strong>MACD:</strong> ${rec.macd.toFixed(2)} / Signal: ${rec.macd_signal.toFixed(2)}<br>
+                                        <div class="indicator-header">
+                                            <svg class="icon icon-sm icon-inline" style="stroke: #06b6d4;">
+                                                <use href="#icon-macd"/>
+                                            </svg>
+                                            <strong>MACD:</strong> ${rec.macd.toFixed(2)} / Signal: ${rec.macd_signal.toFixed(2)}
+                                        </div>
+                                        <strong>Histogram:</strong> <span class="${rec.macd_histogram > 0 ? 'negative' : 'positive'}">${rec.macd_histogram.toFixed(3)}</span><br>
                                         <small>${rec.macd_histogram > 0 ? '✗ Bullish - Bad for selling CCs' : '✓ Bearish - Good for selling CCs'}</small>
                                     </div>
                                     <div>
-                                        <strong>Bollinger Bands:</strong> ${bbPosition}% position<br>
+                                        <div class="indicator-header">
+                                            <svg class="icon icon-sm icon-inline" style="stroke: #f59e0b;">
+                                                <use href="#icon-bollinger"/>
+                                            </svg>
+                                            <strong>Bollinger Bands:</strong> <span class="${rec.bb_position > 0.8 ? 'positive' : rec.bb_position < 0.2 ? 'negative' : ''}">${bbPosition}%</span> position
+                                        </div>
                                         <small>${rec.bb_position > 0.8 ? '✓ Upper band - Good for selling CCs' : rec.bb_position < 0.2 ? '✗ Lower band - Bad for selling CCs' : 'Middle range'}</small>
                                     </div>
                                     <div>
-                                        <strong>Support/Resistance:</strong><br>
+                                        <div class="indicator-header">
+                                            <svg class="icon icon-sm icon-inline" style="stroke: #10b981;">
+                                                <use href="#icon-support"/>
+                                            </svg>
+                                            <strong>Support/Resistance</strong>
+                                        </div>
                                         <small>Support: $${rec.support_level.toFixed(2)} | Resistance: $${rec.resistance_level.toFixed(2)}</small>
                                     </div>
                                 </div>
@@ -6982,27 +7093,20 @@ updateProgress('prices', 'completed');
                     </div>
                     
                     <div class="score-components">
-                        <h5>Score Components:</h5>
+                        <h5>Score Components (ordered by weight):</h5>
+                        <div class="score-item">
+                            <span class="score-label">Annualized Return:</span>
+                            <div class="score-bar-container">
+                                <div class="score-bar" style="width: ${breakdown.annualized_return_score}%"></div>
+                            </div>
+                            <span class="score-value">${breakdown.annualized_return_score.toFixed(1)}/100 × ${(weights.annualized_return * 100).toFixed(0)}% = ${(breakdown.annualized_return_score * weights.annualized_return).toFixed(1)}</span>
+                        </div>
                         <div class="score-item">
                             <span class="score-label">Technical Analysis:</span>
                             <div class="score-bar-container">
                                 <div class="score-bar" style="width: ${breakdown.technical_score}%"></div>
                             </div>
                             <span class="score-value">${breakdown.technical_score.toFixed(1)}/100 × ${(weights.technical * 100).toFixed(0)}% = ${(breakdown.technical_score * weights.technical).toFixed(1)}</span>
-                        </div>
-                        <div class="score-item">
-                            <span class="score-label">Greeks Analysis:</span>
-                            <div class="score-bar-container">
-                                <div class="score-bar" style="width: ${breakdown.greeks_score}%"></div>
-                            </div>
-                            <span class="score-value">${breakdown.greeks_score.toFixed(1)}/100 × ${(weights.greeks * 100).toFixed(0)}% = ${(breakdown.greeks_score * weights.greeks).toFixed(1)}</span>
-                        </div>
-                        <div class="score-item">
-                            <span class="score-label">Liquidity:</span>
-                            <div class="score-bar-container">
-                                <div class="score-bar" style="width: ${breakdown.liquidity_score}%"></div>
-                            </div>
-                            <span class="score-value">${breakdown.liquidity_score.toFixed(1)}/100 × ${(weights.liquidity * 100).toFixed(0)}% = ${(breakdown.liquidity_score * weights.liquidity).toFixed(1)}</span>
                         </div>
                         <div class="score-item">
                             <span class="score-label">Resistance Analysis:</span>
@@ -7019,11 +7123,25 @@ updateProgress('prices', 'completed');
                             <span class="score-value">${breakdown.probability_score.toFixed(1)}/100 × ${(weights.probability * 100).toFixed(0)}% = ${(breakdown.probability_score * weights.probability).toFixed(1)}</span>
                         </div>
                         <div class="score-item">
-                            <span class="score-label">ROI:</span>
+                            <span class="score-label">Greeks Analysis:</span>
                             <div class="score-bar-container">
-                                <div class="score-bar" style="width: ${breakdown.roi_score}%"></div>
+                                <div class="score-bar" style="width: ${breakdown.greeks_score}%"></div>
                             </div>
-                            <span class="score-value">${breakdown.roi_score.toFixed(1)}/100 × ${(weights.roi * 100).toFixed(0)}% = ${(breakdown.roi_score * weights.roi).toFixed(1)}</span>
+                            <span class="score-value">${breakdown.greeks_score.toFixed(1)}/100 × ${(weights.greeks * 100).toFixed(0)}% = ${(breakdown.greeks_score * weights.greeks).toFixed(1)}</span>
+                        </div>
+                        <div class="score-item">
+                            <span class="score-label">IVR:</span>
+                            <div class="score-bar-container">
+                                <div class="score-bar" style="width: ${breakdown.ivr_score}%"></div>
+                            </div>
+                            <span class="score-value">${breakdown.ivr_score.toFixed(1)}/100 × ${(weights.ivr * 100).toFixed(0)}% = ${(breakdown.ivr_score * weights.ivr).toFixed(1)}</span>
+                        </div>
+                        <div class="score-item">
+                            <span class="score-label">Liquidity:</span>
+                            <div class="score-bar-container">
+                                <div class="score-bar" style="width: ${breakdown.liquidity_score}%"></div>
+                            </div>
+                            <span class="score-value">${breakdown.liquidity_score.toFixed(1)}/100 × ${(weights.liquidity * 100).toFixed(0)}% = ${(breakdown.liquidity_score * weights.liquidity).toFixed(1)}</span>
                         </div>
                     </div>
                     
@@ -7111,6 +7229,12 @@ updateProgress('prices', 'completed');
             
             // Update UI
             updateCSPTickerMemoryDisplay();
+        }
+
+        function updateCSPTickerMemory() {
+            // This function is called during initialization to update CSP ticker memory
+            // It's a placeholder that can be used for any initialization logic
+            console.log('🔄 Updating CSP ticker memory...');
         }
 
         function updateCSPTickerMemoryDisplay() {
@@ -7368,27 +7492,15 @@ updateProgress('prices', 'completed');
                                     <!-- Ordered by weight: highest to lowest -->
                                     <div class="score-component">
                                         <div class="component-label">
-                                            <svg class="icon icon-sm icon-inline" style="stroke: #ef4444;">
-                                                <use href="#icon-target"/>
-                                            </svg>
-                                            Probability of Profit (${(weights.probability * 100).toFixed(0)}%)
-                                        </div>
-                                        <div class="component-bar">
-                                            <div class="component-fill" style="width: ${breakdown.probability_score}%; background: #ef4444;"></div>
-                                        </div>
-                                        <div class="component-value">${breakdown.probability_score.toFixed(1)}/100 × ${(weights.probability * 100).toFixed(0)}% = <strong>${(breakdown.probability_score * weights.probability).toFixed(1)}</strong></div>
-                                    </div>
-                                    <div class="score-component">
-                                        <div class="component-label">
                                             <svg class="icon icon-sm icon-inline" style="stroke: #10b981;">
-                                                <use href="#icon-dollar"/>
+                                                <use href="#icon-trending-up"/>
                                             </svg>
-                                            ROI (${(weights.roi * 100).toFixed(0)}%)
+                                            Annualized Return (${(weights.annualized_return * 100).toFixed(0)}%)
                                         </div>
                                         <div class="component-bar">
-                                            <div class="component-fill" style="width: ${breakdown.roi_score}%; background: #10b981;"></div>
+                                            <div class="component-fill" style="width: ${breakdown.annualized_return_score}%; background: #10b981;"></div>
                                         </div>
-                                        <div class="component-value">${breakdown.roi_score.toFixed(1)}/100 × ${(weights.roi * 100).toFixed(0)}% = <strong>${(breakdown.roi_score * weights.roi).toFixed(1)}</strong></div>
+                                        <div class="component-value">${breakdown.annualized_return_score.toFixed(1)}/100 × ${(weights.annualized_return * 100).toFixed(0)}% = <strong>${(breakdown.annualized_return_score * weights.annualized_return).toFixed(1)}</strong></div>
                                     </div>
                                     <div class="score-component">
                                         <div class="component-label">
@@ -7401,6 +7513,30 @@ updateProgress('prices', 'completed');
                                             <div class="component-fill" style="width: ${breakdown.technical_score}%; background: #3b82f6;"></div>
                                         </div>
                                         <div class="component-value">${breakdown.technical_score.toFixed(1)}/100 × ${(weights.technical * 100).toFixed(0)}% = <strong>${(breakdown.technical_score * weights.technical).toFixed(1)}</strong></div>
+                                    </div>
+                                    <div class="score-component">
+                                        <div class="component-label">
+                                            <svg class="icon icon-sm icon-inline" style="stroke: #f59e0b;">
+                                                <use href="#icon-alert"/>
+                                            </svg>
+                                            Resistance (${(weights.resistance * 100).toFixed(0)}%)
+                                        </div>
+                                        <div class="component-bar">
+                                            <div class="component-fill" style="width: ${breakdown.resistance_score}%; background: #f59e0b;"></div>
+                                        </div>
+                                        <div class="component-value">${breakdown.resistance_score.toFixed(1)}/100 × ${(weights.resistance * 100).toFixed(0)}% = <strong>${(breakdown.resistance_score * weights.resistance).toFixed(1)}</strong></div>
+                                    </div>
+                                    <div class="score-component">
+                                        <div class="component-label">
+                                            <svg class="icon icon-sm icon-inline" style="stroke: #ef4444;">
+                                                <use href="#icon-target"/>
+                                            </svg>
+                                            Probability of Profit (${(weights.probability * 100).toFixed(0)}%)
+                                        </div>
+                                        <div class="component-bar">
+                                            <div class="component-fill" style="width: ${breakdown.probability_score}%; background: #ef4444;"></div>
+                                        </div>
+                                        <div class="component-value">${breakdown.probability_score.toFixed(1)}/100 × ${(weights.probability * 100).toFixed(0)}% = <strong>${(breakdown.probability_score * weights.probability).toFixed(1)}</strong></div>
                                     </div>
                                     <div class="score-component">
                                         <div class="component-label">
@@ -7438,39 +7574,53 @@ updateProgress('prices', 'completed');
                                         </div>
                                         <div class="component-value">${breakdown.liquidity_score.toFixed(1)}/100 × ${(weights.liquidity * 100).toFixed(0)}% = <strong>${(breakdown.liquidity_score * weights.liquidity).toFixed(1)}</strong></div>
                                     </div>
-                                    <div class="score-component">
-                                        <div class="component-label">
-                                            <svg class="icon icon-sm icon-inline" style="stroke: #f59e0b;">
-                                                <use href="#icon-alert"/>
-                                            </svg>
-                                            Resistance (${(weights.resistance * 100).toFixed(0)}%)
-                                        </div>
-                                        <div class="component-bar">
-                                            <div class="component-fill" style="width: ${breakdown.resistance_score}%; background: #f59e0b;"></div>
-                                        </div>
-                                        <div class="component-value">${breakdown.resistance_score.toFixed(1)}/100 × ${(weights.resistance * 100).toFixed(0)}% = <strong>${(breakdown.resistance_score * weights.resistance).toFixed(1)}</strong></div>
-                                    </div>
                                 </div>
                             </div>
                             
                             <div class="detail-section">
-                                <h5>📈 Technical Indicators</h5>
+                                <h5>
+                                    <svg class="icon icon-sm icon-inline" style="stroke: var(--primary-blue);">
+                                        <use href="#icon-chart"/>
+                                    </svg>
+                                    Technical Indicators
+                                </h5>
                                 <div class="details-grid">
                                     <div>
-                                        <strong>RSI:</strong> <span class="${rsiClass}">${rec.rsi.toFixed(1)}</span><br>
+                                        <div class="indicator-header">
+                                            <svg class="icon icon-sm icon-inline" style="stroke: #8b5cf6;">
+                                                <use href="#icon-rsi"/>
+                                            </svg>
+                                            <strong>RSI:</strong> <span class="${rsiClass}">${rec.rsi.toFixed(1)}</span>
+                                        </div>
                                         <small>${rec.rsi < 30 ? '✓ Oversold - Good for selling puts' : rec.rsi > 70 ? '✗ Overbought - Bad for selling puts' : 'Neutral'}</small>
                                     </div>
                                     <div>
-                                        <strong>MACD:</strong> ${rec.macd.toFixed(3)}<br>
+                                        <div class="indicator-header">
+                                            <svg class="icon icon-sm icon-inline" style="stroke: #06b6d4;">
+                                                <use href="#icon-macd"/>
+                                            </svg>
+                                            <strong>MACD:</strong> ${rec.macd.toFixed(3)}
+                                        </div>
                                         <strong>Signal:</strong> ${rec.macd_signal.toFixed(3)}<br>
-                                        <strong>Histogram:</strong> <span class="${rec.macd_histogram > 0 ? 'positive' : 'negative'}">${rec.macd_histogram.toFixed(3)}</span>
+                                        <strong>Histogram:</strong> <span class="${rec.macd_histogram > 0 ? 'negative' : 'positive'}">${rec.macd_histogram.toFixed(3)}</span> <!-- For CSPs, bullish is bad -->
                                     </div>
                                     <div>
-                                        <strong>Bollinger Bands:</strong><br>
+                                        <div class="indicator-header">
+                                            <svg class="icon icon-sm icon-inline" style="stroke: #f59e0b;">
+                                                <use href="#icon-bollinger"/>
+                                            </svg>
+                                            <strong>Bollinger Bands</strong>
+                                        </div>
                                         <small>Upper: $${rec.bb_upper.toFixed(2)} | Middle: $${rec.bb_middle.toFixed(2)} | Lower: $${rec.bb_lower.toFixed(2)}</small><br>
-                                        <strong>Position:</strong> ${bbPosition}% <span class="${rec.bb_position < 0.2 ? 'positive' : rec.bb_position > 0.8 ? 'negative' : ''}">${rec.bb_position < 0.2 ? '(Near lower - Good for puts)' : rec.bb_position > 0.8 ? '(Near upper - Bad for puts)' : '(Middle range)'}</span>
+                                        <strong>Position:</strong> <span class="${rec.bb_position < 0.2 ? 'positive' : rec.bb_position > 0.8 ? 'negative' : ''}">${bbPosition}%</span> <span class="${rec.bb_position < 0.2 ? 'positive' : rec.bb_position > 0.8 ? 'negative' : ''}">${rec.bb_position < 0.2 ? '(Near lower - Good for puts)' : rec.bb_position > 0.8 ? '(Near upper - Bad for puts)' : '(Middle range)'}</span>
                                     </div>
                                     <div>
+                                        <div class="indicator-header">
+                                            <svg class="icon icon-sm icon-inline" style="stroke: #10b981;">
+                                                <use href="#icon-support"/>
+                                            </svg>
+                                            <strong>Support/Resistance</strong>
+                                        </div>
                                         <strong>Support:</strong> $${rec.support_level.toFixed(2)}<br>
                                         <strong>Resistance:</strong> $${rec.resistance_level.toFixed(2)}
                                     </div>
