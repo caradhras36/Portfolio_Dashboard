@@ -1,16 +1,13 @@
-# Portfolio Dashboard PowerShell Launcher
-# This script sets the proper encoding and launches the dashboard
+# Portfolio Dashboard Launcher with Unicode Support
+# This script launches the dashboard with proper unicode handling
 
-Write-Host "🚀 Portfolio Dashboard PowerShell Launcher" -ForegroundColor Green
-Write-Host "=" * 50 -ForegroundColor Gray
+Write-Host "🚀 Starting Portfolio Dashboard..." -ForegroundColor Green
 
 # Set up unicode environment
-Write-Host "🔧 Setting up Unicode environment..." -ForegroundColor Cyan
 $OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $env:PYTHONIOENCODING = "utf-8"
 $env:PYTHONUTF8 = "1"
-$env:PYTHONLEGACYWINDOWSSTDIO = "0"
 
 # Check if Python is available
 try {
@@ -18,7 +15,6 @@ try {
     Write-Host "✅ Python found: $pythonVersion" -ForegroundColor Green
 } catch {
     Write-Host "❌ Python not found. Please install Python first." -ForegroundColor Red
-    Write-Host "💡 Download from: https://www.python.org/downloads/" -ForegroundColor Yellow
     exit 1
 }
 
@@ -28,7 +24,7 @@ if (-not (Test-Path "main.py")) {
     exit 1
 }
 
-# Check for virtual environment
+# Check if virtual environment exists
 if (Test-Path "venv") {
     Write-Host "🐍 Activating virtual environment..." -ForegroundColor Cyan
     & "venv\Scripts\Activate.ps1"
@@ -37,21 +33,19 @@ if (Test-Path "venv") {
     & ".venv\Scripts\Activate.ps1"
 } else {
     Write-Host "⚠️  No virtual environment found. Using system Python." -ForegroundColor Yellow
-    Write-Host "💡 Consider creating a virtual environment: python -m venv venv" -ForegroundColor Yellow
 }
 
-# Install dependencies if needed
-if (Test-Path "requirements.txt") {
-    Write-Host "📦 Checking dependencies..." -ForegroundColor Cyan
-    try {
-        pip install -r requirements.txt --quiet
-        Write-Host "✅ Dependencies up to date" -ForegroundColor Green
-    } catch {
-        Write-Host "⚠️  Some dependencies may need manual installation" -ForegroundColor Yellow
-    }
+# Install/update dependencies
+Write-Host "📦 Checking dependencies..." -ForegroundColor Cyan
+try {
+    pip install -r requirements.txt --quiet
+    Write-Host "✅ Dependencies up to date" -ForegroundColor Green
+} catch {
+    Write-Host "⚠️  Some dependencies may need manual installation" -ForegroundColor Yellow
 }
 
-Write-Host "`n🎯 Starting Portfolio Dashboard..." -ForegroundColor Green
+# Start the dashboard
+Write-Host "`n🎯 Launching Portfolio Dashboard..." -ForegroundColor Green
 Write-Host "🌐 Dashboard will be available at: http://localhost:8000" -ForegroundColor Cyan
 Write-Host "📊 Press Ctrl+C to stop the server" -ForegroundColor Yellow
 Write-Host "=" * 50 -ForegroundColor Gray
@@ -61,6 +55,5 @@ try {
 } catch {
     Write-Host "`n❌ Error starting dashboard: $($_.Exception.Message)" -ForegroundColor Red
     Write-Host "💡 Check the console output above for more details" -ForegroundColor Yellow
-    Write-Host "🔧 Try running: scripts\setup-unicode.ps1" -ForegroundColor Cyan
     exit 1
 }

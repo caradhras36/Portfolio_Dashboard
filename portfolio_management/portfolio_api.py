@@ -2414,10 +2414,31 @@ async def get_covered_call_recommendations():
         if not stock_positions:
             return {"message": "No stock positions available for covered calls", "recommendations": []}
         
-        # Get existing covered call positions to avoid conflicts
+        # Get existing covered call positions and calculate available shares for additional CCs
         existing_ccs = [pos for pos in positions if pos.position_type == 'call' and pos.quantity < 0]
-        blocked_tickers = set(pos.ticker for pos in existing_ccs)
-        logger.info(f"🚫 Blocked tickers (already have CCs): {blocked_tickers}")
+        
+        # Calculate how many shares are already committed to covered calls
+        cc_shares_committed = {}
+        for cc_pos in existing_ccs:
+            ticker = cc_pos.ticker
+            # Each call contract covers 100 shares, and quantity is negative for short positions
+            shares_committed = abs(cc_pos.quantity) * 100
+            cc_shares_committed[ticker] = cc_shares_committed.get(ticker, 0) + shares_committed
+        
+        # Find tickers that are completely blocked (no shares available for additional CCs)
+        completely_blocked_tickers = set()
+        for stock_pos in stock_positions:
+            ticker = stock_pos.ticker
+            shares_owned = stock_pos.quantity
+            shares_committed = cc_shares_committed.get(ticker, 0)
+            
+            # If all shares are committed to existing CCs, block this ticker
+            if shares_committed >= shares_owned:
+                completely_blocked_tickers.add(ticker)
+        
+        blocked_tickers = completely_blocked_tickers
+        logger.info(f"🚫 Completely blocked tickers (no shares available for additional CCs): {blocked_tickers}")
+        logger.info(f"📊 CC shares committed by ticker: {cc_shares_committed}")
         
         # Convert positions to dict format for the recommender
         stock_pos_dicts = [asdict(pos) for pos in stock_positions]
@@ -2430,7 +2451,7 @@ async def get_covered_call_recommendations():
         
         # Use the clean CC recommender with Supabase for IVR data
         recommender = CoveredCallRecommender(polygon_api_key=polygon_api_key, supabase_client=supabase)
-        result = recommender.get_recommendations(stock_pos_dicts, blocked_tickers)
+        result = recommender.get_recommendations(stock_pos_dicts, blocked_tickers, cc_shares_committed)
         
         # Extract data from the result dictionary (now matches CSP structure)
         recommendations = result['recommendations']

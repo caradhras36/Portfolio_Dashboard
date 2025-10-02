@@ -96,13 +96,13 @@ class CoveredCallRecommender:
         logger.info(f"📅 Found {len(monthly_expirations)} monthly expirations: {monthly_expirations}")
         return monthly_expirations
     
-    def get_recommendations(self, stock_positions: List[Dict], blocked_tickers: set) -> List[Dict]:
+    def get_recommendations(self, stock_positions: List[Dict], blocked_tickers: set, cc_shares_committed: Dict[str, int] = None) -> List[Dict]:
         """Get covered call recommendations with optimized parallel processing"""
         start_time = time.time()
         logger.info("🚀 Starting optimized CC recommendations with parallel processing")
         
         # Filter valid positions
-        valid_positions = self._filter_valid_positions(stock_positions, blocked_tickers)
+        valid_positions = self._filter_valid_positions(stock_positions, blocked_tickers, cc_shares_committed)
         
         if not valid_positions:
             logger.warning("⚠️  No valid positions to analyze")
@@ -162,27 +162,35 @@ class CoveredCallRecommender:
             'tickers_analyzed': len(valid_positions)
         }
     
-    def _filter_valid_positions(self, stock_positions: List[Dict], blocked_tickers: set) -> List[Dict]:
+    def _filter_valid_positions(self, stock_positions: List[Dict], blocked_tickers: set, cc_shares_committed: Dict[str, int] = None) -> List[Dict]:
         """Filter positions that are valid for covered calls"""
         valid_positions = []
+        
+        if cc_shares_committed is None:
+            cc_shares_committed = {}
         
         for stock_pos in stock_positions:
             ticker = stock_pos['ticker']
             shares_owned = stock_pos['quantity']
+            shares_committed = cc_shares_committed.get(ticker, 0)
+            shares_available = shares_owned - shares_committed
             
             # Smart filtering for faster processing
             if ticker in blocked_tickers:
-                logger.info(f"⏭️  Skipping {ticker} - already has covered call")
+                logger.info(f"⏭️  Skipping {ticker} - no shares available for additional covered calls")
                 continue
             
-            if shares_owned < 100:
-                logger.info(f"⏭️  Skipping {ticker} - only {shares_owned} shares (need 100 for 1 contract)")
+            if shares_available < 100:
+                logger.info(f"⏭️  Skipping {ticker} - only {shares_available} shares available (need 100 for 1 contract)")
                 continue
             
             if ticker in self.skip_tickers:
                 logger.info(f"⏭️  Skipping {ticker} - ETF/Bond (no suitable options)")
                 continue
             
+            # Update the position with available shares info
+            stock_pos['shares_available'] = shares_available
+            stock_pos['shares_committed'] = shares_committed
             valid_positions.append(stock_pos)
         
         logger.info(f"✅ Filtered to {len(valid_positions)} valid positions from {len(stock_positions)} total")
@@ -324,6 +332,7 @@ class CoveredCallRecommender:
         """Process options for a single ticker with optimized pre-filtering"""
         try:
             shares_owned = position['quantity']
+            shares_available = position.get('shares_available', shares_owned)
             stock_price = stock_data['current_price']
             
             # Find monthly expirations
@@ -361,7 +370,7 @@ class CoveredCallRecommender:
             
             for contract in call_contracts:
                 try:
-                    recommendation = self._process_single_option(contract, stock_data, stock_price, shares_owned)
+                    recommendation = self._process_single_option(contract, stock_data, stock_price, shares_available)
                     if recommendation:
                         recommendations.append(recommendation)
                         processed_count += 1
@@ -413,7 +422,7 @@ class CoveredCallRecommender:
         
         return all_call_contracts
     
-    def _process_single_option(self, contract, stock_data: Dict, stock_price: float, shares_owned: int) -> Optional[Dict]:
+    def _process_single_option(self, contract, stock_data: Dict, stock_price: float, shares_available: int) -> Optional[Dict]:
         """Process a single option with optimized calculations and pre-filtering"""
         try:
             # Get snapshot
@@ -489,9 +498,9 @@ class CoveredCallRecommender:
                 'resistance_score': scores['resistance_score'],
                 'volume': greeks['volume'],
                 'open_interest': greeks['open_interest'],
-                'shares_owned': shares_owned,
-                'contracts_possible': shares_owned // 100,
-                'contracts_available': shares_owned // 100,  # Frontend compatibility
+                'shares_owned': shares_available,
+                'contracts_possible': shares_available // 100,
+                'contracts_available': shares_available // 100,  # Frontend compatibility
                 'ivr': stock_data.get('ivr'),
                 # Technical indicators
                 'rsi': stock_data.get('rsi', 50.0),

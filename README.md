@@ -46,6 +46,33 @@ Portfolio_Dashboard/
 
 ## Quick Start
 
+### 🚀 Easy Setup (Recommended)
+
+1. **Run Setup Script**:
+   ```powershell
+   # PowerShell (Recommended)
+   .\scripts\setup-development.ps1
+   
+   # Or just install dependencies
+   .\scripts\install-dependencies.ps1
+   ```
+
+2. **Create Desktop Shortcut**:
+   ```powershell
+   .\create-shortcut.ps1
+   ```
+   This creates a desktop shortcut for easy access!
+
+3. **Start the Dashboard**:
+   - **Option 1**: Double-click the desktop shortcut "Portfolio Dashboard"
+   - **Option 2**: Run `.\run.ps1` in PowerShell
+   - **Option 3**: Run `python main.py` directly
+
+4. **Access the Dashboard**:
+   Open your browser to `http://localhost:8000`
+
+### 🔧 Manual Setup
+
 1. **Install Dependencies**:
    ```bash
    pip install -r requirements.txt
@@ -156,24 +183,77 @@ python run_tests.py --test tests/test_portfolio_api.py
 
 ## Development
 
-### Running in Development Mode
-```bash
+### 🛠️ Development Environment
+
+The project includes comprehensive development tools and follows PowerShell-first principles:
+
+#### **Project Rules & Standards**
+- **PowerShell Preference**: All scripts use PowerShell when possible
+- **Unicode Support**: Full emoji and unicode character support
+- **Code Standards**: Black formatting, type hints, comprehensive testing
+
+#### **Available Scripts**
+```powershell
+# Setup development environment
+.\scripts\setup-development.ps1
+
+# Install dependencies
+.\scripts\install-dependencies.ps1
+
+# Test unicode/emoji support
+.\scripts\test-unicode.ps1
+
+# Format code
+.\scripts\format-code.ps1
+
+# Lint code
+.\scripts\lint-code.ps1
+
+# Run tests
+.\scripts\run-tests.ps1
+
+# Create desktop shortcut
+.\create-shortcut.ps1
+```
+
+#### **Running in Development Mode**
+```powershell
+# PowerShell (Recommended)
+.\run.ps1
+
+# Or directly
 python main.py
 ```
 
-### Code Style
+#### **Code Style**
 The project uses Black for code formatting:
-```bash
+```powershell
+# Format all code
+.\scripts\format-code.ps1
+
+# Or manually
 black .
 ```
 
-### Testing
-```bash
+#### **Testing**
+```powershell
 # Run all tests
-python run_tests.py
+.\scripts\run-tests.ps1
 
-# Run with coverage
+# Or manually
 python run_tests.py --coverage
+```
+
+#### **Unicode & Emoji Support**
+The project has full unicode and emoji support:
+- All scripts handle emojis properly (📊 🚀 💰 📈)
+- Greek letters for financial calculations (α β γ δ)
+- Mathematical symbols (∑ ∏ ∫ ∂ ∇)
+- Currency symbols ($ € £ ¥ ₹)
+
+Test unicode support:
+```powershell
+.\scripts\test-unicode.ps1
 ```
 
 ## Contributing
