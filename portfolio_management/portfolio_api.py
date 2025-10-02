@@ -18,11 +18,11 @@ import os
 import sys
 import io
 from functools import lru_cache
-import time
 from dotenv import load_dotenv
 
-# Load environment variables from .env file (look in parent directory)
-load_dotenv(dotenv_path='../.env')
+# Load environment variables from .env file
+load_dotenv()
+import time
 
 # Configure logging with timestamps
 logging.basicConfig(
@@ -2449,17 +2449,18 @@ async def get_covered_call_recommendations():
             logger.error("POLYGON_API_KEY not found in environment variables")
             raise HTTPException(status_code=500, detail="Polygon.io API key required for covered call recommendations")
         
-        # Use the clean CC recommender with Supabase for IVR data
-        recommender = CoveredCallRecommender(polygon_api_key=polygon_api_key, supabase_client=supabase)
-        result = recommender.get_recommendations(stock_pos_dicts, blocked_tickers, cc_shares_committed)
+        # Use the EV-enhanced recommender with delayed data optimization
+        from ev_delayed_integration import EVDelayedDataIntegration
+        ev_recommender = EVDelayedDataIntegration(polygon_api_key=polygon_api_key, supabase_client=supabase)
+        result = ev_recommender.get_enhanced_cc_recommendations(stock_pos_dicts, blocked_tickers, cc_shares_committed)
         
-        # Extract data from the result dictionary (now matches CSP structure)
+        # Extract data from the result dictionary
         recommendations = result['recommendations']
         underlying_tickers_considered = result['underlying_tickers_considered']
         underlying_tickers_in_results = result['underlying_tickers_in_results']
         
-        # Sort by score
-        recommendations.sort(key=lambda x: x['score'], reverse=True)
+        # Sort by EV score (already sorted by the enhanced recommender)
+        # recommendations.sort(key=lambda x: x['ev_score'], reverse=True)
         
         logger.info(f"✅ Generated {len(recommendations)} total recommendations from {len(stock_positions)} stock positions")
         logger.info(f"📊 Processed stocks: {len(stock_positions) - len(blocked_tickers)}, Blocked: {len(blocked_tickers)}")
@@ -2478,7 +2479,13 @@ async def get_covered_call_recommendations():
             'blocked_tickers': list(blocked_tickers),
             'underlying_tickers_considered': underlying_tickers_considered,
             'underlying_tickers_in_results': underlying_tickers_in_results,
-            'analysis_date': datetime.now().isoformat()
+            'analysis_date': datetime.now().isoformat(),
+            'scoring_method': result.get('scoring_method', 'Expected Value Optimized'),
+            'market_regime': result.get('market_regime', 'unknown'),
+            'delayed_data_optimization': result.get('delayed_data_optimization', False),
+            'safety_margins_applied': result.get('safety_margins_applied', False),
+            'filtered_recommendations': result.get('filtered_recommendations', 0),
+            'total_enhanced': result.get('total_enhanced', 0)
         }
         
     except Exception as e:
@@ -2509,11 +2516,15 @@ async def get_csp_recommendations(request_data: dict = None):
             logger.error("POLYGON_API_KEY not found in environment variables")
             raise HTTPException(status_code=500, detail="Polygon.io API key required for CSP recommendations")
         
-        # Use the new CSP recommender with Supabase for IVR data
-        recommender = CashSecuredPutRecommender(polygon_api_key=polygon_api_key, supabase_client=supabase)
-        result = recommender.get_recommendations(tickers_input, combine_with_watchlist)
+        # Use the EV-enhanced recommender with delayed data optimization
+        from ev_delayed_integration import EVDelayedDataIntegration
+        ev_recommender = EVDelayedDataIntegration(polygon_api_key=polygon_api_key, supabase_client=supabase)
+        result = ev_recommender.get_enhanced_csp_recommendations(tickers_input, combine_with_watchlist)
         
-        logger.info(f"✅ Generated {len(result['recommendations'])} CSP recommendations from {result['total_considered']} options")
+        logger.info(f"✅ Generated {len(result['recommendations'])} EV-enhanced CSP recommendations from {result['total_considered']} options")
+        logger.info(f"📊 Market regime: {result.get('market_regime', 'unknown')}")
+        logger.info(f"📊 Delayed data optimization: {result.get('delayed_data_optimization', False)}")
+        logger.info(f"📊 Filtered recommendations: {result.get('filtered_recommendations', 0)}")
         
         return {
             'recommendations': result['recommendations'],
@@ -2521,7 +2532,13 @@ async def get_csp_recommendations(request_data: dict = None):
             'total_considered': result['total_considered'],
             'underlying_tickers_considered': result['underlying_tickers_considered'],
             'underlying_tickers_in_results': result['underlying_tickers_in_results'],
-            'analysis_date': datetime.now().isoformat()
+            'analysis_date': datetime.now().isoformat(),
+            'scoring_method': result.get('scoring_method', 'Expected Value Optimized'),
+            'market_regime': result.get('market_regime', 'unknown'),
+            'delayed_data_optimization': result.get('delayed_data_optimization', False),
+            'safety_margins_applied': result.get('safety_margins_applied', False),
+            'filtered_recommendations': result.get('filtered_recommendations', 0),
+            'total_enhanced': result.get('total_enhanced', 0)
         }
         
     except Exception as e:
